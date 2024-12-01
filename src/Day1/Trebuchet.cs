@@ -12,9 +12,23 @@ static class Day1 {
         using StreamReader sr = new(filePath);
         string line;
         int res = 0;
+        List<int> list1 = [];
+        List<int> list2 = [];
         while ((line = sr.ReadLine()) != null)
         {
-            res += line.Length; 
+            // Console.WriteLine(line);
+            var parts = line.Split();
+            // Console.WriteLine(parts.Length);
+            list1.Add(int.Parse(parts[0]));
+            list2.Add(int.Parse(parts[3])); 
+        }
+        list1.Sort();
+        list2.Sort();
+        for(int i = 0; i < list1.Count; i++)
+        {
+            // Console.WriteLine(list1[i]);
+            // Console.WriteLine(list2[i]);
+            res += Math.Abs(list1[i] - list2[i]);
         }
         Console.WriteLine(res);
     }
