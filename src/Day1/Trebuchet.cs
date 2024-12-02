@@ -29,6 +29,7 @@ static class Day1 {
         }
 
         else {
+            
             var g1 = list1.GroupBy( i => i );
             var g2 = list2.GroupBy( i => i ).ToDictionary(g => g.Key, g => g.Count());
             res = g1.Select( i => i.Key * i.Count() * (g2.TryGetValue(i.Key, out int count) ? count : 0))
