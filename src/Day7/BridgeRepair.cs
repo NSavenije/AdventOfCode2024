@@ -52,7 +52,15 @@ static class Day7 {
         {   
             return true;
         } 
+        // Trying concatenation
+        if (CheckCombinations(vars, index + 1, Concat(current, vars[index + 1]), target)) 
+        {   
+            return true;
+        }
         return false;
     }   
+
+    static long Concat(long current, int var) =>
+        long.Parse(current.ToString() + var.ToString());
 }
 
