@@ -9,7 +9,7 @@ static class Day8 {
 
     public static void Solve2() => ParseInput(true);
 
-    static void ParseInput(bool b)
+    static void ParseInput(bool harmonics)
     {
         Dictionary<char, List<(int x,int y)>> map = [];
         string filePath = "src/Day8/8.in";
@@ -37,7 +37,10 @@ static class Day8 {
         HashSet<(int x, int y)> antiNodes = [];
         foreach(var key in map.Keys)
         {
-            antiNodes.UnionWith(GetAntiNodes(map[key], 0, input.Count));
+            if (!harmonics)
+                antiNodes.UnionWith(GetAntiNodes(map[key], 0, input.Count));
+            else
+                antiNodes.UnionWith(GetHarmonicAntiNodes(map[key], 0, input.Count));
         }
         Console.WriteLine(antiNodes.Count);
     }
@@ -64,6 +67,42 @@ static class Day8 {
                     antiNodes.Add((x1,y1));
                 if (x2 >= min && x2 < max && y2 >= min && y2 < max)
                     antiNodes.Add((x2,y2));
+            }
+        }
+
+        return antiNodes;
+    }
+
+    static HashSet<(int,int)> GetHarmonicAntiNodes(List<(int x, int y)> nodes, int min, int max)
+    {
+        HashSet<(int, int)> antiNodes = [];
+
+        for(int i = 0; i < nodes.Count; i++)
+        {
+            for(int j = i + 1; j < nodes.Count; j++)
+            {
+                var n1 = nodes[i];
+                var n2 = nodes[j];
+                int dx1 = n1.x - n2.x;
+                int dx2 = n2.x - n1.x;
+                int dy1 = n1.y - n2.y;
+                int dy2 = n2.y - n1.y;
+                int x1 = n1.x;
+                int y1 = n1.y;
+                int x2 = n2.x;
+                int y2 = n2.y;
+                while (x1 >= min && x1 < max && y1 >= min && y1 < max)
+                {   
+                    antiNodes.Add((x1,y1));
+                    x1 += dx1;
+                    y1 += dy1;
+                }
+                while (x2 >= min && x2 < max && y2 >= min && y2 < max)
+                {
+                    antiNodes.Add((x2,y2));
+                    x2 += dx2;
+                    y2 += dy2;
+                }
             }
         }
 
