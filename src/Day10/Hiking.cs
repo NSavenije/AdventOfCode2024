@@ -53,28 +53,28 @@ static class Day10
         int res = 0;
         foreach (var trailHead in starts)
         {
-            int score = FindPaths(grid, trailHead).Count;
+            int score = FindPaths(grid, trailHead);
             res += score;
         }
         return res;
     }
 
-    static HashSet<(int, int)> FindPaths(int[,] grid, (int i, int j) start)
+    static int FindPaths(int[,] grid, (int i, int j) start)
     {
-        HashSet<(int,int)> res = [];
+        int res = 0;
         (int i, int j) = start;
         int val = grid[i,j];
         List<(int, int)> neighbours = GetNeighbours(grid, i, j);
         if (val == 9)
         {
-            return [(i,j)];
+            return 1;
         }
         foreach((int ni, int nj) in neighbours)
         {
             int nval = grid[ni,nj];
             if (nval - 1 == val)
             {
-                res.UnionWith(FindPaths(grid, (ni,nj)));
+                res += FindPaths(grid, (ni,nj));
             }
         }
 
