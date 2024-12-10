@@ -1,11 +1,5 @@
 #nullable disable
 
-using System.Collections.Specialized;
-using System.Data;
-
-using System.Text;
-
-
 static class Day10
 {
 
