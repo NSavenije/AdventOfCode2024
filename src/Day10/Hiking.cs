@@ -2,15 +2,24 @@
 
 static class Day10
 {
+    public static void Solve1() => Solve(true);
 
-    public static void Solve1()
+    public static void Solve2() => Solve(false);
+
+    static void Solve(bool distinct)
     {
-        string filePath = "src/Day10/10.in";
+        int[,] grid = ParseInput("src/Day10/10.in", out List<(int,int)> trailHeads);
+        int res = FindAllPaths(grid, trailHeads, distinct);
+        Console.WriteLine(res);
+    }   
+
+    static int[,] ParseInput(string filePath, out List<(int,int)> trailHeads)
+    {
         string[] inputList = File.ReadAllLines(filePath);
         int size = inputList.Length;
 
         int[,] grid = new int[size, size];
-        List<(int i, int j)> trailHeads = [];
+        trailHeads = [];
 
         // Transform the list to a grid of ints 
         for (int i = 0; i < size; i++)
@@ -23,98 +32,34 @@ static class Day10
                     trailHeads.Add((i, j));
             }
         }
-
-        int res = ScoreAllPaths(grid, trailHeads);
-        Console.WriteLine(res);
+        return grid;
     }
 
-    public static void Solve2()
-    {
-        string filePath = "src/Day10/10.in";
-        string[] inputList = File.ReadAllLines(filePath);
-        int size = inputList.Length;
-
-        int[,] grid = new int[size, size];
-        List<(int i, int j)> trailHeads = [];
-
-        // Transform the list to a grid of ints 
-        for (int i = 0; i < size; i++)
-        {
-            for (int j = 0; j < size; j++)
-            {
-                int val = int.Parse(inputList[i][j].ToString());
-                grid[i, j] = val;
-                if (val == 0)
-                    trailHeads.Add((i, j));
-            }
-        }
-
-        int res = FindAllPaths(grid, trailHeads);
-        Console.WriteLine(res);
-    }
-
-    static int ScoreAllPaths(int[,] grid, List<(int i, int j)> starts)
+    static int FindAllPaths(int[,] grid, List<(int i, int j)> trailHeads, bool distinct)
     {
         int res = 0;
-        foreach (var trailHead in starts)
+        foreach (var trailHead in trailHeads)
         {
-            int score = FindPaths(grid, trailHead).Count;;
-            res += score;
+            List<(int,int)> score = FindPaths(grid, trailHead);
+            if(distinct)
+                score = score.Distinct().ToList();
+            res += score.Count;
         }
         return res;
     }
 
-    static int FindAllPaths(int[,] grid, List<(int i, int j)> starts)
+    static List<(int,int)> FindPaths(int[,] grid, (int i, int j) start)
     {
-        int res = 0;
-        foreach (var trailHead in starts)
-        {
-            int score = ScorePaths(grid, trailHead);
-            res += score;
-        }
-        return res;
-    }
-
-    static HashSet<(int,int)> FindPaths(int[,] grid, (int i, int j) start)
-    {
-        HashSet<(int,int)> res = [];
+        List<(int,int)> res = [];
         (int i, int j) = start;
         int val = grid[i,j];
-        List<(int, int)> neighbours = GetNeighbours(grid, i, j);
         if (val == 9)
-        {
             return [(i,j)];
-        }
-        foreach((int ni, int nj) in neighbours)
-        {
-            int nval = grid[ni,nj];
-            if (nval - 1 == val)
-            {
-                res.UnionWith(FindPaths(grid, (ni,nj)));
-            }
-        }
 
-        return res;
-    }
-
-    static int ScorePaths(int[,] grid, (int i, int j) start)
-    {
-        int res = 0;
-        (int i, int j) = start;
-        int val = grid[i,j];
-        List<(int, int)> neighbours = GetNeighbours(grid, i, j);
-        if (val == 9)
-        {
-            return 1;
-        }
-        foreach((int ni, int nj) in neighbours)
-        {
-            int nval = grid[ni,nj];
-            if (nval - 1 == val)
-            {
-                res += ScorePaths(grid, (ni,nj));
-            }
-        }
+        // Recursively follow all legal paths
+        foreach((int ni, int nj) in GetNeighbours(grid, i, j))
+            if (grid[ni,nj] - 1 == val)
+                res.AddRange(FindPaths(grid, (ni,nj)));
 
         return res;
     }
