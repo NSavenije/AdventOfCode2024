@@ -2,12 +2,14 @@
 
 using System.Text;
 
+using System.Collections.Concurrent;
+
 static class Day6 {
     static readonly (int y,int x)[] Dirs = [(-1,0),(0,1),(1,0),(0,-1)];
     static (int x,int y) Loc;
     public static void Solve1() {
         char[][] maze = ParseInput();
-        FindPath(maze, out var path);
+        FindPath(maze, (-1,-1), out var path);
         HashSet<(int,int)> res = path.Select(p => (p.y,p.x)).ToHashSet();
         Console.WriteLine(res.Count);
     }
@@ -15,25 +17,26 @@ static class Day6 {
     public static void Solve2()
     {
         char[][] maze = ParseInput();
-        FindPath(maze, out var path);
-        HashSet<(int,int)> res = path.Select(p => (p.y,p.x)).ToHashSet();
-        int timeLoops = 0;
-        foreach(var (y, x) in res)
+        FindPath(maze, (-1,-1), out var path);
+        HashSet<(int, int)> res = path.Select(p => (p.y, p.x)).ToHashSet();
+        var timeLoops = new ConcurrentBag<int>();
+
+        Parallel.ForEach(res, (coordinate) =>
         {
-            if (maze[y][x] != '.') continue;
+            var (y, x) = coordinate;
+            if (maze[y][x] != '.') return;
 
-            maze[y][x] = '#';
-            if (!FindPath(maze, out var _))
-                timeLoops++;
+            if (!FindPath(maze, (y, x), out var _))
+            {
+                timeLoops.Add(1);
+            }
+        });
 
-            maze[y][x] = '.';
-        }
-
-
-        Console.WriteLine(timeLoops);
+        Console.WriteLine(timeLoops.Count);
     }
 
-    private static bool FindPath(char[][] maze, out HashSet<(int y, int x, int d)> path)
+
+    private static bool FindPath(char[][] maze, (int y, int x) wall, out HashSet<(int y, int x, int d)> path)
     {
         path = [];
         var (x, y) = Loc;
@@ -46,7 +49,7 @@ static class Day6 {
 
             if (!IsWithinBounds(maze, y + dy, x + dx))
                 break;
-            if (maze[y + dy][x + dx] == '#')
+            if (maze[y + dy][x + dx] == '#' || (y + dy, x + dx) == (wall.y, wall.x))
             {
                 dirIndex = (dirIndex + 1) % 4;
             }
