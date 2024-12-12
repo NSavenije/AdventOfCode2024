@@ -4,9 +4,11 @@ static class Day12
 {
     public static void Solve1() => Solve(true);
 
-    public static void Solve2()
+    public static void Solve2() => Solve(false);
+
+    static void Solve(bool part1)
     {
-        string filePath = "C:\\Users\\nouds\\Repos\\AdventOfCode2024\\src\\Day12\\12.in";
+        string filePath = "src/Day12/12.in";
         char[,] garden = ParseInput(filePath);
         List<HashSet<(int,int)>> regions = []; 
         HashSet<(int,int)> partOfRegion = [];
@@ -40,103 +42,12 @@ static class Day12
             }
         }
 
-        long res = 0;
+        int res = 0;
         foreach(var r in regions)
         {
             int area = r.Count;
-            int sides = CalcSides(r);
+            int sides = part1 ? r.Select(plot => 4 - GetNeighbours(garden,plot.Item1,plot.Item2).Count).Sum() : CalcSides(r);
             int score = area * sides;
-            res += score;
-        }
-        Console.WriteLine(res);
-    }
-
-    static int CalcSides(HashSet<(int, int)> region)
-    {
-        int vertices = 0;
-        foreach((int i, int j) in region)
-        {
-            (int,int)[] dirs = 
-            [
-                (i - 1, j),(i, j + 1),(i + 1, j),(i, j - 1),
-                (i - 1, j - 1),(i - 1, j + 1),(i + 1, j + 1),(i + 1, j - 1)
-            ];
-            // Am I top left? i.e. is the thing above me and the thing to the left not part of region
-            if (!region.Contains(dirs[0]) && !region.Contains(dirs[3]))
-                vertices++;
-            
-            // Am I top right? i.e. is the thing above me and the thing to the right not part of region
-            if (!region.Contains(dirs[0]) && !region.Contains(dirs[1]))
-                vertices++;
-
-            // Am I bottom left? i.e. is the thing below me and the thing to the left not part of region
-            if (!region.Contains(dirs[2]) && !region.Contains(dirs[3]))
-                vertices++;
-
-            // Am I bottom left? i.e. is the thing below me and the thing to the right not part of region
-            if (!region.Contains(dirs[2]) && !region.Contains(dirs[1]))
-                vertices++;
-
-            // Inside corners...
-            // Top left elbow?
-            if (region.Contains(dirs[0]) && region.Contains(dirs[3]) && !region.Contains(dirs[4]))
-                vertices++;
-            // Top right elbow?
-            if (region.Contains(dirs[0]) && region.Contains(dirs[1]) && !region.Contains(dirs[5]))
-                vertices++;
-            // Bottom right elbow?
-            if (region.Contains(dirs[2]) && region.Contains(dirs[1]) && !region.Contains(dirs[6]))
-                vertices++;
-            // Bottom left elbow?
-            if (region.Contains(dirs[2]) && region.Contains(dirs[3]) && !region.Contains(dirs[7]))
-                vertices++;
-        }
-
-        return vertices;
-    }
-
-    static void Solve(bool part1)
-    {
-        string filePath = "C:\\Users\\nouds\\Repos\\AdventOfCode2024\\src\\Day12\\12.in";
-        char[,] garden = ParseInput(filePath);
-        List<List<int>> regions = []; 
-        HashSet<(int,int)> partOfRegion = [];
-        int currentRegion = 0;
-        for (int i = 0; i < garden.GetLength(0); i++)
-        {
-            for (int j = 0; j < garden.GetLength(1); j++)
-            {
-                if(partOfRegion.Contains((i,j)))
-                    continue;
-                
-                List<int> neighbourCounts = [];
-                Queue<(int,int)> q = [];
-                q.Enqueue((i,j));
-                
-                while (q.Count != 0)
-                {
-                    var plot = q.Dequeue();
-                    if (partOfRegion.Contains(plot))
-                        continue;
-                    partOfRegion.Add(plot);
-                    var neighbours = GetNeighbours(garden,plot.Item1,plot.Item2);
-                    neighbourCounts.Add(4 - neighbours.Count);
-                    foreach(var n in neighbours)
-                        if (!partOfRegion.Contains(n))
-                            q.Enqueue(n);
-                }
-
-                regions.Add(neighbourCounts);
-                currentRegion++;
-            }
-        }
-
-        long res = 0;
-        foreach(var r in regions)
-        {
-            int area = r.Count;
-            int perimiter = r.Sum();
-            int score = area * perimiter;
             res += score;
         }
         Console.WriteLine(res);
@@ -149,7 +60,6 @@ static class Day12
 
         char[,] grid = new char[size, size];
 
-        // Transform the list to a grid of ints 
         for (int i = 0; i < size; i++)
             for (int j = 0; j < size; j++)
                 grid[i, j] = inputList[i][j];
@@ -173,5 +83,39 @@ static class Day12
             }
         }
         return neighbours;
+    }
+
+    static int CalcSides(HashSet<(int, int)> region)
+    {
+        int vertices = 0;
+        foreach((int i, int j) in region)
+        {
+            (int,int)[] dirs = 
+            [
+                (i - 1, j),(i, j + 1),(i + 1, j),(i, j - 1),
+                (i - 1, j - 1),(i - 1, j + 1),(i + 1, j + 1),(i + 1, j - 1)
+            ];
+
+            bool top = !region.Contains(dirs[0]);
+            bool right = !region.Contains(dirs[1]);
+            bool bottom = !region.Contains(dirs[2]);
+            bool left = !region.Contains(dirs[3]);
+            bool topLeft = !region.Contains(dirs[4]);
+            bool topRight = !region.Contains(dirs[5]);
+            bool bottomRight = !region.Contains(dirs[6]);
+            bool bottomLeft = !region.Contains(dirs[7]);
+            
+            if (top && left)     vertices++;
+            if (top && right)    vertices++;
+            if (bottom && right) vertices++;
+            if (bottom && left)  vertices++;
+            // Inside corners...
+            if (!top && !left && topLeft)         vertices++;
+            if (!top && !right && topRight)       vertices++;
+            if (!bottom && !right && bottomRight) vertices++;
+            if (!bottom && !left && bottomLeft)   vertices++;
+        }
+
+        return vertices;
     }
 }
