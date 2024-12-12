@@ -1,6 +1,5 @@
 #nullable disable
 
-using System.Data;
 using System.Text;
 
 static class Day6 {
@@ -8,120 +7,66 @@ static class Day6 {
     static (int x,int y) Loc;
     public static void Solve1() {
         char[][] maze = ParseInput();
-        var (x, y) = Loc;
-        int res = 0;
-        int dirIndex = 0;
-        while(true)
-        {
-            // paint & count
-            if (maze[y][x] != 'o')
-                res++;
-            maze[y][x] = 'o';
-
-            // move or escape
-            var(dy, dx) = Dirs[dirIndex];
-            if (y + dy > -1 && y + dy < maze.Length && x + dx > -1 && x + dx < maze[0].Length)
-            {
-                if (maze[y + dy][x + dx] == '#')
-                {
-                    // turn
-                    dirIndex = (dirIndex + 1) % 4;
-                }
-                //Move
-                else
-                {
-                    x += dx; 
-                    y += dy;
-                }
-            }
-            //Escape
-            else
-            {
-                break;
-            }
-
-            
-        }
-        Console.WriteLine(CharArrayToString(maze));
-        Console.WriteLine(res);
+        FindPath(maze, out var path);
+        HashSet<(int,int)> res = path.Select(p => (p.y,p.x)).ToHashSet();
+        Console.WriteLine(res.Count);
     }
 
     public static void Solve2()
     {
         char[][] maze = ParseInput();
-
-        int loops = 0;
-        for(int m = 0 ; m < maze.Length * maze.Length; m++)
+        FindPath(maze, out var path);
+        HashSet<(int,int)> res = path.Select(p => (p.y,p.x)).ToHashSet();
+        int timeLoops = 0;
+        foreach(var (y, x) in res)
         {
-            int my = m / maze.Length;
-            int mx = m % maze.Length;
-            if(maze[my][mx] != '#' && maze[my][mx] != '^')
+            if (maze[y][x] != '.') continue;
+
+            maze[y][x] = '#';
+            if (!FindPath(maze, out var _))
+                timeLoops++;
+
+            maze[y][x] = '.';
+        }
+
+
+        Console.WriteLine(timeLoops);
+    }
+
+    private static bool FindPath(char[][] maze, out HashSet<(int y, int x, int d)> path)
+    {
+        path = [];
+        var (x, y) = Loc;
+        int dirIndex = 0;
+        path.Add((y, x, dirIndex));
+
+        while (true)
+        {
+            var (dy, dx) = Dirs[dirIndex];
+
+            if (!IsWithinBounds(maze, y + dy, x + dx))
+                break;
+            if (maze[y + dy][x + dx] == '#')
             {
-                maze[my][mx] = '#';
+                dirIndex = (dirIndex + 1) % 4;
             }
             else
             {
-                continue;
-            }
-
-            HashSet<int>[][] mazeDirs = new HashSet<int>[maze.Length][];
-            for (int i = 0; i < mazeDirs.Length; i++) 
-            { 
-                mazeDirs[i] = new HashSet<int>[maze.Length];
-                for (int j = 0; j < mazeDirs[i].Length; j++) 
+                x += dx;
+                y += dy;
+                if (path.Contains((y, x, dirIndex)))
                 {
-                    mazeDirs[i][j] = []; 
-                    if(maze[i][j] != '#' && maze[i][j] != '^')
-                        maze[i][j] = '.';
+                    return false;
                 }
+                path.Add((y, x, dirIndex));
             }
-            var (x, y) = Loc;
-            int dirIndex = 0;
-            // Console.WriteLine(CharArrayToString(maze));
-
-            
-            while(true)
-            {
-                if (maze[y][x] == '.')
-                    maze[y][x] = dirIndex % 2 == 0 ? '|' : '-';
-                else if (maze[y][x] != '^' && maze[y][x] != 'O')
-                    maze[y][x] = '+';
-                
-                var(dy, dx) = Dirs[dirIndex];
-
-
-                // move or escape
-                if (y + dy > -1 && y + dy < maze.Length && x + dx > -1 && x + dx < maze[0].Length)
-                {
-                    if (maze[y + dy][x + dx] == '#')
-                    {
-                        // turn
-                        dirIndex = (dirIndex + 1) % 4;
-                    }
-                    //Move
-                    else
-                    {
-                        x += dx; 
-                        y += dy;
-                        if (mazeDirs[y][x].Contains(dirIndex))
-                        {
-                            loops++;
-                            break;
-                        }
-                    }
-                }
-                //Escape
-                else
-                {
-                    break;
-                }
-                mazeDirs[y][x].Add(dirIndex);
-                // Console.WriteLine(CharArrayToString(maze));
-            }
-            maze[my][mx] = '.';
         }
-        Console.WriteLine(loops);
+
+        return true;
     }
+
+    private static bool IsWithinBounds(char[][] maze, int y, int x) =>
+        y >= 0 && y < maze.Length && x >= 0 && x < maze[0].Length;
 
     private static char[][] ParseInput()
     {
