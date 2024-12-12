@@ -2,36 +2,42 @@
 
 static class Day11
 {
-    public static void Solve1() => Solve(true);
+    public static void Solve1() => Solve(25);
 
-    public static void Solve2() => Solve(false);
+    public static void Solve2() => Solve(75);
 
-    static void Solve(bool partOne)
+    static void Solve(int its)
     {
-        List<long> stones = File.ReadAllLines("src/Day11/11.in")[0].Split(' ').Select(long.Parse).ToList();
-        for(int i = 0; i < 25; i++)
-        {
-            List<long> newStones = [];
-            for(int s = 0; s < stones.Count; s++)
-            {
-                long stone = stones[s];
-                int numLen = stone.ToString().Length;
-                if (stone == 0)
-                    newStones.Add(1);
+        Dictionary<(long,long),long> cache = [];
+        long stones = File.ReadAllLines("src/Day11/11.in")[0].Split(' ')
+                            .Select(long.Parse)
+                            .Select(x => Count(x, its))
+                            .Sum();
+        Console.WriteLine(stones);
+        
+        long Count(long stone, int d) 
+        { 
+            if (d == 0) 
+                return 1;
 
-                else if (numLen % 2 == 0)
-                {
-                    newStones.Add((long)(stone / Math.Pow(10, numLen / 2)));
-                    newStones.Add((long)(stone % Math.Pow(10, numLen / 2)));
-                }
-                else
-                    newStones.Add(stone * 2024);
-            }
+            if (stone == 0) 
+                return Count(1, d - 1); 
 
-            stones = newStones;
-            Console.WriteLine("it: " + i + " stones: " + stones.Count);
-            // Console.WriteLine(string.Join(' ', stones));
+            if (cache.ContainsKey((stone, d))) 
+                return cache[(stone, d)]; 
+                
+            int numLen = stone.ToString().Length;
+            if (numLen % 2 == 0) 
+            { 
+                long left  = Count((long)(stone / Math.Pow(10, numLen / 2)), d - 1);
+                long right = Count((long)(stone % Math.Pow(10, numLen / 2)), d - 1);
+                long result = left + right;
+                cache[(stone, d)] = result; 
+                return result; 
+            } 
+            long res = Count(stone * 2024, d - 1); 
+            cache[(stone, d)] = res; 
+            return res;
         }
-        Console.WriteLine(stones.Count);
     }
 }
