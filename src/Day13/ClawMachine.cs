@@ -1,6 +1,5 @@
 #nullable disable
 
-using System.Security.Principal;
 using System.Text.RegularExpressions;
 
 static class Day13
@@ -12,62 +11,24 @@ static class Day13
     static void Solve(bool part1)
     {
         string filePath = "src/Day13/13.in";
-        List<Machine> machines = ParseInput(filePath);
-        int res = 0;
-        foreach(Machine machine in machines)
+        List<Machine> machines = ParseInput(filePath, part1);
+        long tokens = 0;
+        foreach(Machine m in machines)
         {
-            Console.WriteLine(machine);
-            int cost = MinEnergyCost(machine);
-            res = cost >= 0 ? res + cost : res;
+            // Cramer's rule?
+            long det = m.ButtonA.X * m.ButtonB.Y - m.ButtonA.Y * m.ButtonB.X;
+            if (((m.Prize.X * m.ButtonB.Y - m.Prize.Y * m.ButtonB.X) % det == 0) 
+                && (m.Prize.Y * m.ButtonA.X - m.Prize.X * m.ButtonA.Y) % det == 0)
+            {
+                long a = (m.Prize.X * m.ButtonB.Y - m.Prize.Y * m.ButtonB.X) / det;
+                long b = (m.Prize.Y * m.ButtonA.X - m.Prize.X * m.ButtonA.Y) / det;
+                tokens += 3 * a + b;
+            }
         }
-        Console.WriteLine(res);
+        Console.WriteLine(tokens);
     }
 
-    static int MinEnergyCost(Machine m) 
-    { 
-        var dp = new Dictionary<(int, int), int> {[(0, 0)] = 0 }; 
-        var queue = new Queue<(int, int, int, int)>(); 
-        queue.Enqueue((0, 0, 0, 0)); 
-        int px = m.Prize.X;
-        int py = m.Prize.Y;
-        while (queue.Count > 0) 
-        { 
-            var (cx, cy, pa, pb) = queue.Dequeue(); 
-            int currentEnergy = dp[(cx, cy)]; 
-            // Move using button A 
-            int nx = cx + m.ButtonA.X; 
-            int ny = cy + m.ButtonA.Y; 
-            if (pa <= 100 && nx <= px && ny <= py && (!dp.ContainsKey((nx, ny)) || currentEnergy + 3 < dp[(nx, ny)])) 
-            { 
-                dp[(nx, ny)] = currentEnergy + 3;
-                queue.Enqueue((nx, ny, pa + 1, pb));
-            } 
-            // Move using button B 
-            nx = cx + m.ButtonB.X; 
-            ny = cy + m.ButtonB.Y; 
-            if (pb <= 100 && nx <= px && ny <= py && (!dp.ContainsKey((nx, ny)) || currentEnergy + 1 < dp[(nx, ny)])) 
-            { 
-                dp[(nx, ny)] = currentEnergy + 1; 
-                queue.Enqueue((nx, ny, pa, pb + 1)); 
-            } 
-        } 
-        return dp.ContainsKey((px, py)) ? dp[(px, py)] : -1; 
-    }
-
-    private static ulong GCD(ulong a, ulong b)
-    {
-        while (a != 0 && b != 0)
-        {
-            if (a > b)
-                a %= b;
-            else
-                b %= a;
-        }
-
-        return a | b;
-    }
-
-    static List<Machine> ParseInput(string filePath) 
+    static List<Machine> ParseInput(string filePath, bool part1) 
     { 
         var machines = new List<Machine>(); 
         var lines = File.ReadAllLines(filePath); 
@@ -80,9 +41,10 @@ static class Day13
             if (match.Success) 
             { 
                 var machine = new Machine { 
-                    ButtonA = (int.Parse(match.Groups["ax"].Value), int.Parse(match.Groups["ay"].Value)), 
-                    ButtonB = (int.Parse(match.Groups["bx"].Value), int.Parse(match.Groups["by"].Value)), 
-                    Prize = (int.Parse(match.Groups["px"].Value), int.Parse(match.Groups["py"].Value)) }; 
+                    ButtonA =           (int.Parse(match.Groups["ax"].Value), int.Parse(match.Groups["ay"].Value)), 
+                    ButtonB =           (int.Parse(match.Groups["bx"].Value), int.Parse(match.Groups["by"].Value)), 
+                    Prize = part1   ?   (long.Parse(match.Groups["px"].Value), long.Parse(match.Groups["py"].Value)) 
+                                    :   (long.Parse(match.Groups["px"].Value) + 10000000000000, long.Parse(match.Groups["py"].Value) + 10000000000000) }; 
                 machines.Add(machine); 
             } 
         } 
@@ -93,7 +55,7 @@ static class Day13
     {
         public (int X, int Y) ButtonA { get; set; }
         public (int X, int Y) ButtonB { get; set; }
-        public (int X, int Y) Prize { get; set; }
+        public (long X, long Y) Prize { get; set; }
 
         public override string ToString()
         {
