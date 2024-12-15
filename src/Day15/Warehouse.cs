@@ -64,18 +64,137 @@ static class Day15
 
     public static void Solve2()
     {
-        
+        string filePath = "C:/Users/nouds/Repos/AdventOfCode2024/src/Day15/15.in";
+        string[] file = File.ReadAllText(filePath).Split("\r\n\r\n");
+        string[,] warehouse = ParseWideWarehouse(file[0], out (int, int) init);
+        List<int> dirs = ParseDirs(file[1]);
+        (int x, int y) = init;
+        int stepCounter = 0;
+        foreach(int dir in dirs)
+        {
+            stepCounter++;
+            // Print(warehouse);
+            (int dx, int dy) = Dirs[dir];
+            string newTile = warehouse[x + dx, y + dy];
+            if (newTile == "#")
+                continue;
+            if (newTile == ".")
+            {
+                warehouse[x,y] = ".";
+                warehouse[x + dx, y + dy] = "@";
+                x += dx;
+                y += dy;
+                continue;
+            }
+            if (newTile != "[" && newTile != "]")
+            {
+                Console.WriteLine(stepCounter + " " + newTile);
+                Print(warehouse);
+                throw new NotImplementedException();
+            }
+
+            // we'll push some boxes's.
+            // If left or right (1 || 3) normal box row.
+            // If up or down, towers of boxes can exist.
+            if (dir == 1 || dir == 3)
+            {
+                int tempX = x + dx;
+                while(warehouse[tempX,y] == "]" || warehouse[tempX,y] == "[")
+                    tempX += dx;
+                // Can't push those boxes into a wall!
+                if (warehouse[tempX, y] == "#")
+                    continue;
+
+                tempX = x + dx;
+                while(warehouse[tempX,y] == "]" || warehouse[tempX,y] == "[")
+                {
+                    warehouse[tempX,y] = warehouse[tempX,y] == "]" ? "[" : "]";
+                    tempX += dx;
+                }
+                warehouse[tempX,y] = warehouse[tempX - dx ,y] == "]" ? "[" : "]";
+                warehouse[x + dx, y] = "@";
+                warehouse[x, y] = ".";
+                x += dx;
+            }
+            // Push the boxes up or down
+            else
+            {
+                // How to keep track of the Stack of boxes?
+                // If I push a [ into a ] I mustve increased my stack
+                // If I push a ] into a ] Stack remains the same
+                // If I push a ] into a . do essentially nothing, but try to shrink the stack
+                // If I push a ] into a # false
+                // Levels is just tempY
+                // List of xs per level?
+                // at level 0 is me, at level 1 = y + dy
+                // break if hit a wall.
+                // move if stack latest active level is 0
+                // Make sure that one level is completly finished before moving to the next one.
+                // That'd be some basterdized BFS.
+                Queue<(int,int)> boxQ = [];
+                boxQ.Enqueue((x, y + dy));
+                int tdx = warehouse[x,y + dy] == "[" ? 1 : -1;
+                boxQ.Enqueue((x + tdx, y + dy));
+                List<(int,int)> boxes = [];
+                bool moveable = true;
+                while(boxQ.Count != 0)
+                {
+                    var (bx,by) = boxQ.Dequeue();
+                    boxes.Add((bx,by));
+                    // push into #, stop entire move
+                    if (warehouse[bx,by + dy] == "#")
+                    {
+                        moveable = false;
+                        break;
+                    }
+
+                    string tile = warehouse[bx,by]; 
+                    // If [ above [                    
+                    if (tile == warehouse[bx,by + dy])
+                    {
+                        boxQ.Enqueue((bx,by + dy));
+                        continue;
+                    }
+                    // If . above [
+                    if (warehouse[bx,by + dy] == ".")
+                        continue;
+
+                    // If ] above [
+                    tdx = warehouse[bx,by + dy] == "[" ? 1 : -1;
+                    if (!boxQ.Contains((bx, by + dy)))
+                        boxQ.Enqueue((bx, by + dy));
+                    if (!boxQ.Contains((bx + tdx, by + dy)))
+                        boxQ.Enqueue((bx + tdx, by + dy));
+                }
+                if (!moveable)
+                    continue;
+
+                boxes = boxes.Distinct().Reverse().ToList();
+                foreach(var (bx,by) in boxes)
+                {
+                    warehouse[bx, by + dy] = warehouse[bx, by];
+                    warehouse[bx, by] = ".";
+                }
+                warehouse[x, y + dy] = "@";
+                warehouse[x, y] = ".";
+                y += dy;
+            }
+            
+        }
+
+        Print(warehouse);
+        Console.WriteLine(CalcScore(warehouse, true));
     }
 
-    static int CalcScore(string[,] warehouse)
+    static int CalcScore(string[,] warehouse, bool wide = false)
     {
         int score = 0;
-
+        var boxTile = wide ? "[" : "O";
         for(int x = 1; x < warehouse.GetLength(0) - 1; x++)
         {
             for(int y = 1; y < warehouse.GetLength(1) - 1; y++)
             {
-                if(warehouse[x,y] == "O")
+                if(warehouse[x,y] == boxTile)
                     score += (100 * y) + x;
             }
         }
@@ -95,6 +214,37 @@ static class Day15
                 warehouse[j,i] = lines[i][j].ToString(); 
                 if (lines[i][j] == '@')
                     init = (j,i);
+            }
+        }
+        return warehouse;
+    }
+
+    static string[,] ParseWideWarehouse(string input, out (int x,int y) init)
+    {
+        string[] lines = input.Split("\r\n");
+        init = (-1,-1);
+        string[,] warehouse = new string[lines[0].Length * 2,lines.Length];
+        for(int i = 0; i < lines.Length; i++)
+        {
+            for(int j = 0; j < lines[0].Length; j++)
+            {
+                string tile = lines[i][j].ToString();
+                if (tile == "O")
+                {
+                    warehouse[2 * j,i] =  "[";
+                    warehouse[2 * j+1,i] =  "]";
+                    continue;
+                }
+                if (tile == "@")
+                {
+                    warehouse[2 * j,i] = "@";
+                    warehouse[2 * j + 1,i] = ".";
+                    init = (2 * j,i);
+                    continue;
+                }
+                warehouse[2 *j,i] = tile;
+                warehouse[2 *j + 1,i] = tile;
+                
             }
         }
         return warehouse;
@@ -128,9 +278,9 @@ static class Day15
 
     static void Print(string[,] warehouse)
     {
-        for(int x = 0; x < warehouse.GetLength(0); x++)
+        for(int x = 0; x < warehouse.GetLength(1); x++)
         {
-            for(int y = 0; y < warehouse.GetLength(1); y++)
+            for(int y = 0; y < warehouse.GetLength(0); y++)
             {
                 Console.Write(warehouse[y, x]);
             }
