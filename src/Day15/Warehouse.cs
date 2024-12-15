@@ -119,18 +119,6 @@ static class Day15
             // Push the boxes up or down
             else
             {
-                // How to keep track of the Stack of boxes?
-                // If I push a [ into a ] I mustve increased my stack
-                // If I push a ] into a ] Stack remains the same
-                // If I push a ] into a . do essentially nothing, but try to shrink the stack
-                // If I push a ] into a # false
-                // Levels is just tempY
-                // List of xs per level?
-                // at level 0 is me, at level 1 = y + dy
-                // break if hit a wall.
-                // move if stack latest active level is 0
-                // Make sure that one level is completly finished before moving to the next one.
-                // That'd be some basterdized BFS.
                 Queue<(int,int)> boxQ = [];
                 boxQ.Enqueue((x, y + dy));
                 int tdx = warehouse[x,y + dy] == "[" ? 1 : -1;
@@ -182,7 +170,7 @@ static class Day15
             
         }
 
-        Print(warehouse);
+        // Print(warehouse);
         Console.WriteLine(CalcScore(warehouse, true));
     }
 
