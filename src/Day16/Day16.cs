@@ -14,80 +14,70 @@ static class Day16
 
     public static void Solve2()
     {
-        string filePath = "src/Day16/16c.in";
+        string filePath = "src/Day16/16.in";
         char[,] maze = ParseMaze(File.ReadAllLines(filePath), out var nodes);
         int dirIndex = 1;
-        var path = SolveMazePaths(nodes, dirIndex, maze);
-        foreach(var (x,y) in path)
+        var paths = SolveMazePaths(nodes, dirIndex, maze);
+        int minCost = paths.Min(p => p.cost);
+        paths = paths.Where(p => p.cost == minCost).ToList();
+        HashSet<(int,int)> pathTiles = [];
+        foreach((List<(int x, int y)> path, _) in paths)
         {
-            maze[x,y] = 'o';
+            foreach(var (x,y) in path)
+            {
+                maze[x,y] = 'o';
+                pathTiles.Add((x,y));
+            }
         }
-        Print(maze);
+        // Print(maze);
+        Console.WriteLine(pathTiles.Count);
     }
 
-    static List<(int x, int y)> SolveMazePaths(((int x, int y) start, (int x, int y) end) nodes, int d, char[,] maze)
+    static List<(List<(int x, int y)> path, int cost)> SolveMazePaths(((int x, int y) start, (int x, int y) end) nodes, int d, char[,] maze)
     {
         var visitedTiles = new Dictionary<(int x, int y, int d), int>();
-        var q = new Queue<(int x, int y, int d, int cost)>();
-        var predecessors = new Dictionary<(int x, int y, int d), (int x, int y, int d)?>();
+        var q = new Queue<(int x, int y, int d, int cost, List<(int x, int y)> path)>();
 
         int x = nodes.start.x;
         int y = nodes.start.y;
-        q.Enqueue((x, y, d, 0));
+        var startPath = new List<(int x, int y)> { (x, y) };
+        q.Enqueue((x, y, d, 0, startPath));
         visitedTiles[(x, y, d)] = 0;
-        predecessors[(x, y, d)] = null;
+
+        var allShortestPaths = new List<(List<(int x, int y)> path, int cost)>();
 
         while (q.Count != 0)
         {
-            (x, y, d, int cost) = q.Dequeue();
-            var (dx, dy) = Dirs[d];
+            var (cx, cy, cd, cc, cpath) = q.Dequeue();
+            var (dx, dy) = Dirs[cd];
 
             // Move forward
-            ProcessMove(x + dx, y + dy, d, cost + 1, maze, q, visitedTiles, predecessors, (x, y, d));
+            ProcessMove(cx + dx, cy + dy, cd, cc + 1, maze, q, visitedTiles, cpath, allShortestPaths, nodes.end);
 
             // Turn right
-            ProcessMove(x, y, (d + 1) % 4, cost + 1000, maze, q, visitedTiles, predecessors, (x, y, d));
+            ProcessMove(cx, cy, (cd + 1) % 4, cc + 1000, maze, q, visitedTiles, cpath, allShortestPaths, nodes.end);
 
             // Turn left
-            ProcessMove(x, y, (d + 3) % 4, cost + 1000, maze, q, visitedTiles, predecessors, (x, y, d));
+            ProcessMove(cx, cy, (cd + 3) % 4, cc + 1000, maze, q, visitedTiles, cpath, allShortestPaths, nodes.end);
         }
 
-        return GetPath(nodes.end, visitedTiles, predecessors);
+        return allShortestPaths;
     }
 
-    static void ProcessMove(int x, int y, int d, int cost, char[,] maze, Queue<(int x, int y, int d, int cost)> q, Dictionary<(int x, int y, int d), int> visitedTiles, Dictionary<(int x, int y, int d), (int x, int y, int d)?> predecessors, (int x, int y, int d) parent)
+    static void ProcessMove(int x, int y, int d, int cost, char[,] maze, Queue<(int x, int y, int d, int cost, List<(int x, int y)> path)> q, Dictionary<(int x, int y, int d), int> visitedTiles, List<(int x, int y)> path, List<(List<(int x, int y)> path, int cost)> allShortestPaths, (int x, int y) end)
     {
-        if (maze[x, y] != '#' && (!visitedTiles.TryGetValue((x, y, d), out int minCost) || cost < minCost))
+        if (maze[x, y] != '#' && (!visitedTiles.TryGetValue((x, y, d), out int minCost) || cost <= minCost))
         {
             visitedTiles[(x, y, d)] = cost;
-            q.Enqueue((x, y, d, cost));
-            predecessors[(x, y, d)] = parent;
-        }
-    }
+            var newPath = new List<(int x, int y)>(path) { (x, y) };
+            q.Enqueue((x, y, d, cost, newPath));
 
-    static List<(int x, int y)> GetPath((int x, int y) end, Dictionary<(int x, int y, int d), int> visitedTiles, Dictionary<(int x, int y, int d), (int x, int y, int d)?> predecessors)
-    {
-        int minCost = int.MaxValue;
-        (int x, int y, int d)? endNode = null;
-
-        for (int dir = 0; dir < 4; dir++)
-        {
-            if (visitedTiles.TryGetValue((end.x, end.y, dir), out int mc) && mc < minCost)
+            if (x == end.x && y == end.y)
             {
-                minCost = mc;
-                endNode = (end.x, end.y, dir);
+                allShortestPaths.Add((newPath, cost));
             }
         }
-
-        var path = new List<(int x, int y)>();
-        for (var node = endNode; node.HasValue; node = predecessors[node.Value])
-        {
-            path.Add((node.Value.x, node.Value.y));
-        }
-        path.Reverse();
-        return path;
     }
-
 
     static int SolveMaze(((int x,int y) start,(int x,int y) end) nodes, int d, char[,] maze)
     {
@@ -107,7 +97,7 @@ static class Day16
             int tx = x + dx; int ty = y + dy;
             if (maze[tx, ty] != '#')
             {
-                
+
                 if (visitedTiles.TryGetValue((tx, ty, d), out int minCostFwd))
                 {
                     if (cost + 1 < minCostFwd)
@@ -179,7 +169,7 @@ static class Day16
         {
             for(int j = 0; j < lines[0].Length; j++)
             {
-                maze[j,i] = lines[i][j]; 
+                maze[j,i] = lines[i][j];
                 if (lines[i][j] == 'S')
                     init = (j,i);
                 if (lines[i][j] == 'E')
