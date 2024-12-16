@@ -6,7 +6,7 @@ static class Day15
 
     public static void Solve1()
     {
-        string filePath = "C:/Users/nouds/Repos/AdventOfCode2024/src/Day15/15.in";
+        string filePath = "src/Day15/15.in";
         string[] file = File.ReadAllText(filePath).Split("\r\n\r\n");
         string[,] warehouse = ParseWarehouse(file[0], out (int, int) init);
         List<int> dirs = ParseDirs(file[1]);
@@ -58,13 +58,13 @@ static class Day15
             y += dy;
         }
 
-        Print(warehouse);
+        // Print(warehouse);
         Console.WriteLine(CalcScore(warehouse));
     }
 
     public static void Solve2()
     {
-        string filePath = "C:/Users/nouds/Repos/AdventOfCode2024/src/Day15/15.in";
+        string filePath = "src/Day15/15.in";
         string[] file = File.ReadAllText(filePath).Split("\r\n\r\n");
         string[,] warehouse = ParseWideWarehouse(file[0], out (int, int) init);
         List<int> dirs = ParseDirs(file[1]);
