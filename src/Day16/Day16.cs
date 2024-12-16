@@ -1,7 +1,5 @@
 #nullable disable
 
-using System.Collections;
-
 static class Day16
 {
     static readonly (int x,int y)[] Dirs = [(0,-1),(1,0),(0,1),(-1,0)];
@@ -16,6 +14,62 @@ static class Day16
 
     public static void Solve2()
     {
+        string filePath = "src/Day16/16.in";
+        char[,] maze = ParseMaze(File.ReadAllLines(filePath), out var nodes);
+        int dirIndex = 1;
+        int score = SolveMazePaths(nodes, dirIndex, maze);
+        Console.WriteLine(score);
+    }
+
+    static int SolveMazePaths(((int x, int y) start, (int x, int y) end) nodes, int d, char[,] maze)
+    {
+        int cost = 0;
+        var visitedTiles = new Dictionary<(int x, int y, int d), int>();
+        var q = new Queue<(int x, int y, int d, int cost)>();
+
+        int x = nodes.start.x;
+        int y = nodes.start.y;
+        q.Enqueue((x, y, d, cost));
+        visitedTiles[(x, y, d)] = cost;
+
+        while (q.Count != 0)
+        {
+            (x, y, d, cost) = q.Dequeue();
+            var (dx, dy) = Dirs[d];
+
+            // Move forward
+            ProcessMove(x + dx, y + dy, d, cost + 1, maze, q, visitedTiles);
+
+            // Turn right
+            ProcessMove(x, y, (d + 1) % 4, cost + 1000, maze, q, visitedTiles);
+
+            // Turn left
+            ProcessMove(x, y, (d + 3) % 4, cost + 1000, maze, q, visitedTiles);
+        }
+
+        return GetMinCost(nodes.end, visitedTiles);
+    }
+
+    static void ProcessMove(int x, int y, int d, int cost, char[,] maze, Queue<(int x, int y, int d, int cost)> q, Dictionary<(int x, int y, int d), int> visitedTiles)
+    {
+        if (maze[x, y] != '#' && (!visitedTiles.TryGetValue((x, y, d), out int minCost) || cost < minCost))
+        {
+            visitedTiles[(x, y, d)] = cost;
+            q.Enqueue((x, y, d, cost));
+        }
+    }
+
+    static int GetMinCost((int x, int y) end, Dictionary<(int x, int y, int d), int> visitedTiles)
+    {
+        int minCost = int.MaxValue;
+        for (int dir = 0; dir < 4; dir++)
+        {
+            if (visitedTiles.TryGetValue((end.x, end.y, dir), out int mc))
+            {
+                minCost = Math.Min(mc, minCost);
+            }
+        }
+        return minCost;
     }
 
     static int SolveMaze(((int x,int y) start,(int x,int y) end) nodes, int d, char[,] maze)
