@@ -25,6 +25,35 @@ static class Day18
 
     public static void Solve2()
     {
+        string filePath = "src/Day18/18.in";
+        string[] lines = File.ReadAllLines(filePath);
+        int size = 73;
+        char[,] maze = PrefillMaze(size);
+        // From part 1 we know the first 1024 are fine
+        int x = -1;
+        int y = -1;
+        for (int i = 0; i < 1024; i++)
+        {
+            int[] coords = lines[i].Split(',').Select(int.Parse).ToArray();
+            x = coords[0] + 1; // because of the added boundary
+            y = coords[1] + 1; 
+            maze[x,y] = '#';
+        }
+
+        for (int i = 1025; i < lines.Length; i++)
+        {
+            int[] coords = lines[i].Split(',').Select(int.Parse).ToArray();
+            x = coords[0] + 1; // because of the added boundary
+            y = coords[1] + 1; 
+            maze[x,y] = '#';
+            var distances = BFS(maze, true);
+            if(!distances.TryGetValue((size - 2, size - 2), out _))
+                break;
+        }
+
+        // Print(maze);
+
+        Console.WriteLine(x - 1 + "," + (y - 1));
     }
 
     static Dictionary<(int,int),int> BFS(char[,] maze, bool terminateOnExit = false)
@@ -36,6 +65,8 @@ static class Day18
         while (q.Count != 0)
         {
             (int x, int y, int d) = q.Dequeue();
+            if (x == maze.GetLength(0) - 1 && y == maze.GetLength(0) - 1 && terminateOnExit)
+                return distances;
             for(int i = 0; i < 4; i++)
             {
                 int dx = dirs[i].x;
@@ -46,11 +77,12 @@ static class Day18
                 if (!distances.TryGetValue((x+dx,y+dy), out var minDist) || d < minDist)
                 {
                     distances[(x+dx,y+dy)] = d;
-                    maze[x+dx,y+dy] = 'o';
                     q.Enqueue((x + dx, y + dy, d + 1));
+                    maze[x + dx, y + dy] = 'o';
                 }
             }
         }
+        // Print(maze);
         return distances;
     }
 
