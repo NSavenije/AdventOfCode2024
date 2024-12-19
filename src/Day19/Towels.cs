@@ -5,31 +5,23 @@ static class Day19
     static HashSet<string> Towels;
     static Dictionary<string, long> memo = [];
 
-    public static void Solve1()
-    {
-        string filePath = "C:/Users/nouds/Repos/AdventOfCode2024/src/Day19/19.in";
-        string[] lines = File.ReadAllLines(filePath);
+    public static void Solve1() => Solve(false);
 
-        Towels = lines[0].Split(", ").ToHashSet();
-        List<string> reachable = [];
-        for(int i = 2; i < lines.Length; i++)
-        {
-            if (IsPatternPossible(lines[i], 0)) 
-                reachable.Add(lines[i]);
-        }
-        Console.WriteLine(reachable.Count);
-    }
+    public static void Solve2() => Solve(true);
 
-    public static void Solve2()
+    static void Solve(bool count)
     {
-        string filePath = "C:/Users/nouds/Repos/AdventOfCode2024/src/Day19/19.in";
+        string filePath = "src/Day19/19.in";
         string[] lines = File.ReadAllLines(filePath);
 
         Towels = lines[0].Split(", ").ToHashSet();
         long total = 0;
         for(int i = 2; i < lines.Length; i++)
         {
-            total += CountAllPatterns(lines[i], 0);
+            if (count)
+                total += CountAllPatterns(lines[i], 0);
+            else
+                total += IsPatternPossible(lines[i], 0) ? 1 : 0;
         }
         Console.WriteLine(total);
     }
