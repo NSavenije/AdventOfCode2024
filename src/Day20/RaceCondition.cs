@@ -1,215 +1,132 @@
-public static class Day20
+#nullable disable
+
+static class Day20
 {
+    static readonly (int x, int y)[] Dirs = [(0, -1), (1, 0), (0, 1), (-1, 0)];
+
     public static void Solve1()
     {
-        var lines = File.ReadAllLines("src/Day20/20b.in").ToArray();
-        Tree mazeTree = MazeParser.ParseMaze(lines);
-        // Console.WriteLine(MazeTraversal.DFS(mazeTree.Root));
-        MazeTraversal mazeTraversal = new();
-        Console.WriteLine(mazeTraversal.DFS(mazeTree));
+        const string filePath = "src/Day20/20.in";
+        string[,] maze = ParseMaze(File.ReadAllLines(filePath), out var nodes);
+        // Print(maze);
+        maze = LabelMaze(maze, nodes.start, nodes.end);
+        List<int> cheats = [];
+        for(int x = 1; x < maze.GetLength(0) - 1; x++)
+        {
+            for(int y = 1; y < maze.GetLength(1) - 1; y++)
+            {
+                if(maze[x,y] != "#")
+                    cheats.AddRange(Cheat(maze,x,y,2));
+            }
+        }
+        Console.WriteLine(cheats.Where(x => x >= 100).Count());
     }
 
-
-
-    class Node((int,int) pos, int cols)
+    public static void Solve2()
     {
-        public Dictionary<(int,int),int> DistanceFromNode { get; set; } = [];
-        public int DistanceFromRoot { get; set; }
-        public int Neigbours;
-        public Dictionary<Node, int> AdjacentNodes { get; } = [];
-
-        public (int r,int c) Pos {get; set;} = pos;
-
-        public List<Node> Path = [];
-        public int Cols = cols;
-
-        public void AddChild(Node node, int distance)
+        const string filePath = "src/Day20/20.in";
+        string[,] maze = ParseMaze(File.ReadAllLines(filePath), out var nodes);
+        // Print(maze);
+        maze = LabelMaze(maze, nodes.start, nodes.end);
+        List<int> cheats = [];
+        for(int x = 1; x < maze.GetLength(0) - 1; x++)
         {
-            AdjacentNodes.Add(node, distance);
+            for(int y = 1; y < maze.GetLength(1) - 1; y++)
+            {
+                if(maze[x,y] != "#")
+                    cheats.AddRange(Cheat(maze,x,y,20));
+            }
         }
+        Console.WriteLine(cheats.Where(x => x >= 100).Count());
     }
 
-    class Tree(Node node, (int,int) end)
+    static List<int> Cheat(string[,] maze, int x, int y, int d)
     {
-        public Node Root = node;
-
-        public (int i,int j) End = end;
+        List<int> cheats = [];
+        Dictionary<(int,int),int> reachableTiles = GetReachableSquares(x,y,d,maze.GetLength(0));
+        foreach(var (nx,ny) in reachableTiles.Keys)
+        {
+            if (maze[nx, ny] == "#")
+                continue;
+            int from = int.Parse(maze[x, y]);
+            int to = int.Parse(maze[nx, ny]);
+            int dist = reachableTiles[(nx,ny)];
+            if (from + dist < to)
+                cheats.Add(to - from - dist);
+        }
+        return cheats;
     }
 
-    class MazeParser
+    public static Dictionary<(int, int),int> GetReachableSquares(int x, int y, int n, int size)
     {
-        public static Tree ParseMaze(string[] mazeRows)
+        Dictionary<(int, int),int> reachableSquares = [];
+
+        for (int dx = -n; dx <= n; dx++)
         {
-            int rows = mazeRows.Length;
-            int cols = mazeRows[0].Length;
-
-            Dictionary<(int,int), Node> nodes = [];
-
-            // Check if a position is a junction (has more than 2 accessible paths)
-            int CountNeighbours(int x, int y)
+            for (int dy = -n; dy <= n; dy++)
             {
-                int count = 0;
-                if (x > 0 && mazeRows[x - 1][y] != '#') count++;
-                if (x < rows - 1 && mazeRows[x + 1][y] != '#') count++;
-                if (y > 0 && mazeRows[x][y - 1] != '#') count++;
-                if (y < cols - 1 && mazeRows[x][y + 1] != '#') count++;
-                return count;
-            }
-
-            (int,int) start = (-1,-1);
-            (int,int) end = (-1,-1);
-            // Create nodes for each traversable position
-            for (int i = 0; i < rows; i++)
-            {
-                for (int j = 0; j < cols; j++)
+                int newX = x + dx;
+                int newY = y + dy;
+                int dist = Math.Abs(dx) + Math.Abs(dy);
+                if (dist <= n && newX >= 0 && newX < size && newY >= 0 && newY < size)
                 {
-                    int neighbours = CountNeighbours(i,j);
-                    if ((mazeRows[i][j] != '#' && neighbours != 2) || mazeRows[i][j] == 'S' || mazeRows[i][j] == 'E')
-                    {
-                        nodes.Add((i,j), new Node((i, j), cols)
-                        {
-                            Neigbours = neighbours
-                        });
-                    }
-                    if (mazeRows[i][j] == 'S')
-                    {
-                        start = (i,j);
-                    }
-                    if (mazeRows[i][j] == 'E')
-                    {
-                        end = (i,j);
-                    }
+                    reachableSquares.Add((newX, newY),dist);
                 }
             }
-
-            foreach(var junction in nodes)
-            {
-                HashSet<(int,int)> visitedNodes = [];
-                FloodFill(junction.Key,  junction, 0, visitedNodes);
-                Console.WriteLine($"{junction.Key}: {string.Join(',',junction.Value.AdjacentNodes.Select(n => $"{n.Key.Pos}[{n.Value}]"))}");
-            }
-
-            void FloodFill((int i, int j) pos, KeyValuePair<(int,int),Node> junction, int depth, HashSet<(int,int)> visitedNodes)
-            {
-                // Console.WriteLine(pos);
-                int i = pos.i;
-                int j = pos.j;
-                if (!visitedNodes.Add((i,j)))
-                {
-                    // Console.WriteLine("stopped: backtracking");
-                    return;
-                }
-
-                if (pos != junction.Value.Pos && nodes.TryGetValue((i,j), out var node))
-                {
-                    // If I found another junction. STOP looking further
-                    node.DistanceFromNode[junction.Key] = depth;
-                    junction.Value.AddChild(node, depth);
-                    // Console.WriteLine("stopped: node found");
-                    return;
-                }
-                if (mazeRows[i + 1][j] != '#')
-                {
-                    // Console.WriteLine("track: down");
-                    FloodFill((i + 1, j), junction, depth + 1, visitedNodes);
-                }
-                if (mazeRows[i - 1][j] != '#')
-                {
-                    // Console.WriteLine("track: up");
-                    FloodFill((i - 1, j), junction, depth + 1, visitedNodes);
-                }
-                if (mazeRows[i][j + 1] != '#')
-                {
-                    // Console.WriteLine("track: right");
-                    FloodFill((i, j + 1), junction, depth + 1, visitedNodes);
-                }
-                if (mazeRows[i][j - 1] != '#')
-                {
-                    // Console.WriteLine("track: left");
-                    FloodFill((i, j - 1), junction, depth + 1, visitedNodes);
-                }
-            }
-
-
-            Tree maze = new(nodes[start], end);
-
-            return maze;
         }
+
+        return reachableSquares;
     }
 
-    class MazeTraversal
+    static string[,] LabelMaze(string[,] maze, (int x, int y) start, (int x,int y) end)
     {
-        List<Node> Path = [];
-        List<List<Node>> Paths = [];
-        public int DFS(Tree maze)
+        Queue<(int,int)> q = [];
+        q.Enqueue(start);
+        maze[start.x,start.y] = "0";
+        while(q.Count != 0)
         {
-            if (maze.Root == null)
-                return 0;
-
-            HashSet<(int,int)> visited = [];
-            DFSHelper(maze.Root, visited);
-            int minDistance = int.MaxValue;
-            foreach(List<Node> path in Paths)
+            var (x,y) = q.Dequeue();
+            for(int i = 0; i < 4; i++)
             {
-                // Console.WriteLine($"{string.Join(',', Path.Select(n => n.Pos))}");
-                if (path.Count != 0 && path.Last().Pos == maze.End)
+                var (dx,dy) = Dirs[i];
+                if (maze[x+dx,y+dy] == "." || maze[x+dx,y+dy] == "E")
                 {
-                    int distance = GetDistance(path);
-                    minDistance = Math.Min(distance, minDistance);
+                    maze[x+dx,y+dy] = (int.Parse(maze[x,y]) + 1).ToString();
+                    q.Enqueue((x+dx,y+dy));
                 }
             }
-            return minDistance;
         }
-
-        private int DFSHelper(Node node, HashSet<(int,int)> visited)
-        {
-            if (node == null)
-                return 0;
-
-            if(!visited.Add(node.Pos))
-            {
-                return 0;
-            }
-            else
-            {
-                Path.Add(node);
-                Paths.Add(Path.ToArray().Select(n => n).ToList());
-            }
-
-            int minDistance = GetDistance(); // Will always be replaced by child.
-            foreach (var adjacentNode in node.AdjacentNodes)
-            {
-
-                int distance = DFSHelper(adjacentNode.Key, visited);
-                minDistance = Math.Min(minDistance, distance);
-            }
-
-            visited.Remove(node.Pos);
-            Path.Remove(node);
-
-            return minDistance;
-        }
-
-        private int GetDistance()
-        {
-            int distance = 0;
-            for(int i = 1; i < Path.Count; i++)
-            {
-                distance += Path[i].DistanceFromNode[Path[i - 1].Pos];
-            }
-            return distance;
-        }
-
-        private int GetDistance(List<Node> path)
-        {
-            int distance = 0;
-            for(int i = 1; i < path.Count; i++)
-            {
-                distance += path[i].DistanceFromNode[path[i - 1].Pos];
-            }
-            return distance;
-        }
-
+        return maze;
     }
 
+    static string[,] ParseMaze(string[] lines, out ((int x, int y) start, (int x, int y) end) nodes)
+    {
+        (int x, int y) start = (-1, -1);
+        (int x, int y) end = (-1, -1);
+        var maze = new string[lines[0].Length, lines.Length];
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            for (int j = 0; j < lines[0].Length; j++)
+            {
+                maze[j, i] = lines[i][j].ToString();
+                if (lines[i][j] == 'S') start = (j, i);
+                if (lines[i][j] == 'E') end = (j, i);
+            }
+        }
+        nodes = (start, end);
+        return maze;
+    }
+
+    static void Print(string[,] maze)
+    {
+        for (int x = 0; x < maze.GetLength(1); x++)
+        {
+            for (int y = 0; y < maze.GetLength(0); y++)
+            {
+                Console.Write(maze[y, x]);
+            }
+            Console.WriteLine();
+        }
+    }
 }
