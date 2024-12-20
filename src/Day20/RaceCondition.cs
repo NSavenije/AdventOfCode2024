@@ -29,14 +29,21 @@ static class Day20
         // Print(maze);
         maze = LabelMaze(maze, nodes.start, nodes.end);
         List<int> cheats = [];
-        for(int x = 1; x < maze.GetLength(0) - 1; x++)
-        {
-            for(int y = 1; y < maze.GetLength(1) - 1; y++)
-            {
-                if(maze[x,y] != "#")
-                    cheats.AddRange(Cheat(maze,x,y,20));
-            }
-        }
+        object lockObject = new(); 
+        Parallel.For(1, maze.GetLength(0) - 1, x => 
+        { 
+            for (int y = 1; y < maze.GetLength(1) - 1; y++) 
+            { 
+                if (maze[x, y] != "#") 
+                { 
+                    var results = Cheat(maze, x, y, 20); 
+                    lock (lockObject) 
+                    { 
+                        cheats.AddRange(results); 
+                    } 
+                } 
+            } 
+        });
         Console.WriteLine(cheats.Where(x => x >= 100).Count());
     }
 
