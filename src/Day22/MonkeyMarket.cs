@@ -23,24 +23,17 @@ public static class Day22
         for(int i = 0; i < numbers.Length; i++)
         {
             List<(int price, int change)> ps = [((int)(numbers[i] % 10), int.MinValue)];
+            HashSet<(int,int,int,int)> seqs = [];
             for(int c = 0; c < 2000; c++)
             {
                 numbers[i] = GenerateNextSecret(numbers[i]);
                 int p = (int)(numbers[i] % 10);
                 ps.Add((p, p - ps[c].price));
-            }
+                if (c < 3) continue;
 
-            HashSet<(int,int,int,int)> seqs = [];
-            for(int c = 4; c < 2001; c++)
-            {
                 var key = (ps[c-3].change, ps[c-2].change, ps[c-1].change, ps[c].change);
                 if (seqs.Add(key))
-                {
-                    if (sequenceSums.TryGetValue(key, out var p))
-                        sequenceSums[key] += ps[c].price;
-                    else
-                        sequenceSums[key] = ps[c].price;
-                }
+                    sequenceSums[key] = sequenceSums.TryGetValue(key, out var val) ? val + ps[c].price : ps[c].price;
             }
         }
         Console.WriteLine(sequenceSums.Values.Max()); 
