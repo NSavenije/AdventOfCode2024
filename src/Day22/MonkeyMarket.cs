@@ -1,26 +1,35 @@
 #nullable disable
 
-using System.Diagnostics;
-
 public static class Day22
 {
     public static void Solve1()
     {
-        string filePath = "C:/Users/nouds/Repos/AdventOfCode2024/src/Day22/22.in";
+        string filePath = "src/Day22/22.in";
+        long[] numbers = File.ReadAllLines(filePath).Select(long.Parse).ToArray();
+
+        for(int i = 0; i < numbers.Length; i++)
+            for(int c = 0; c < 2000; c++)
+                numbers[i] = GenerateNextSecret(numbers[i]);
+
+        Console.WriteLine(numbers.Sum());  
+    }
+
+    public static void Solve2()
+    {
+        string filePath = "src/Day22/22.in";
         long[] numbers = File.ReadAllLines(filePath).Select(long.Parse).ToArray();
         Dictionary<(int,int,int,int),int> sequenceSums = [];
         
         for(int i = 0; i < numbers.Length; i++)
         {
-            List<(int price, int change)> ps = [];
-            ps.Add(((int)(numbers[i] % 10), int.MinValue));
+            List<(int price, int change)> ps = [((int)(numbers[i] % 10), int.MinValue)];
             for(int c = 0; c < 2000; c++)
             {
                 numbers[i] = GenerateNextSecret(numbers[i]);
                 int p = (int)(numbers[i] % 10);
-                int dp = p - ps[c].price;
-                ps.Add((p, dp));
+                ps.Add((p, p - ps[c].price));
             }
+
             HashSet<(int,int,int,int)> seqs = [];
             for(int c = 4; c < 2001; c++)
             {
@@ -34,7 +43,6 @@ public static class Day22
                 }
             }
         }
-        Console.WriteLine(numbers.Sum());  
         Console.WriteLine(sequenceSums.Values.Max()); 
     }
 
