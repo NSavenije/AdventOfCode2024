@@ -8,26 +8,7 @@ static class Day23
         const string filePath = "src/Day23/23.in";
         var connStrings = File.ReadAllLines(filePath);
 
-        Dictionary<string,HashSet<string>> connections = [];
-
-        foreach (string conn in connStrings)
-        {
-            var computers = conn.Split('-');
-
-            if (!connections.TryGetValue(computers[0], out _))
-            {
-                connections[computers[0]] = [];
-            }
-
-            connections[computers[0]].Add(computers[1]);
-
-            if (!connections.TryGetValue(computers[1], out _))
-            {
-                connections[computers[1]] = [];
-            }
-
-            connections[computers[1]].Add(computers[0]);
-        }
+        Dictionary<string,HashSet<string>> connections = ConstructGraph(connStrings);
 
         var triplets = new List<(string, string, string)>();
 
@@ -43,7 +24,7 @@ static class Day23
                             connections[computer1].Contains(neighborOfNeighbor) && 
                             connections[neighborOfNeighbor].Contains(computer1))
                         {
-                            var triplet = new[] { computer1, neighbor, neighborOfNeighbor };
+                            string[] triplet = [computer1, neighbor, neighborOfNeighbor];
                             Array.Sort(triplet);
                             var tripletTuple = (triplet[0], triplet[1], triplet[2]);
 
@@ -58,13 +39,9 @@ static class Day23
         }
         int tripletsCount = 0;
         foreach (var (a, b, c) in triplets)
-        {
             if (a[0] == 't' || b[0] == 't' || c[0] == 't')
-            {
                 tripletsCount++;
-                // Console.WriteLine($"({a}, {b}, {c})");
-            }
-        }
+
         Console.WriteLine(tripletsCount);
     }
 
@@ -72,31 +49,36 @@ static class Day23
     {
         const string filePath = "src/Day23/23.in";
         var connStrings = File.ReadAllLines(filePath);
-        Dictionary<string,HashSet<string>> connections = [];
-        foreach (string conn in connStrings)
-        {
-            var computers = conn.Split('-');
-
-            if (!connections.TryGetValue(computers[0], out _))
-            {
-                connections[computers[0]] = [];
-            }
-
-            connections[computers[0]].Add(computers[1]);
-
-            if (!connections.TryGetValue(computers[1], out _))
-            {
-                connections[computers[1]] = [];
-            }
-
-            connections[computers[1]].Add(computers[0]);
-        }
-
+        Dictionary<string,HashSet<string>> connections = ConstructGraph(connStrings);
         
         List<string> maxClique = FindMaximumClique(connections).ToList();
         maxClique.Sort();
 
         Console.WriteLine(string.Join(',', maxClique));
+    }
+
+    private static Dictionary<string,HashSet<string>> ConstructGraph(string[] vertices)
+    {
+        Dictionary<string,HashSet<string>> graph = [];
+        foreach (string v in vertices)
+        {
+            var nodes = v.Split('-');
+
+            if (!graph.TryGetValue(nodes[0], out _))
+            {
+                graph[nodes[0]] = [];
+            }
+
+            graph[nodes[0]].Add(nodes[1]);
+
+            if (!graph.TryGetValue(nodes[1], out _))
+            {
+                graph[nodes[1]] = [];
+            }
+
+            graph[nodes[1]].Add(nodes[0]);
+        }
+        return graph;
     }
 
     private static HashSet<string> FindMaximumClique(Dictionary<string,HashSet<string>> connections)
@@ -139,7 +121,6 @@ static class Day23
             // X := X ⋃ {v}
             x.Add(vertex);
         }
-
         return maxClique;
     }
 }
